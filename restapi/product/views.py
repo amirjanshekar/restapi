@@ -1,23 +1,19 @@
-from django.shortcuts import render
-from django.http import HttpResponse, JsonResponse
-from rest_framework.parsers import JSONParser
+from rest_framework.permissions import IsAuthenticated
+from .models import Article, Product
+from .serializers import ArticleSerializer, ProductSerializer
+from rest_framework.authentication import TokenAuthentication, SessionAuthentication, BasicAuthentication
 from rest_framework import viewsets
-from .models import Product
-from .serializers import ProductSerializer
+from rest_framework import mixins
 
 
-def product_list(request):
-    if request.method == "GET":
-        products = Product.objects.all()
-        serializer = ProductSerializer(products, many=True)
-        return JsonResponse(serializer.data, safe=False)
+class ProductList(viewsets.ModelViewSet):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+    serializer_class = ProductSerializer
+    queryset = Product.objects.all()
 
-    elif request.method == "POST":
-        data = JSONParser().parse(request)
-        serializer = ProductSerializer(data=data)
 
-        if serializer.is_valid():
-            serializer.save()
-            return render(JsonResponse(serializer.data, status=201))
-        return render(JsonResponse(serializer.errors, status=400))
-    
+class ArticleList(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin,
+                  mixins.RetrieveModelMixin, mixins.DestroyModelMixin):
+    serializer_class = ArticleSerializer
+    queryset = Article.objects.all()
